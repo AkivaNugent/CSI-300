@@ -1,0 +1,32 @@
+use employees;
+
+DROP TRIGGER IF EXISTS SalAdjHi; -- THIS SHOULD BE MULTIPLE TRIGGERS SO THAT THIS IS NOT A MULTI-TRIGGER. MULTI-TRIGGER IS GENERALLY A NO NO
+
+DELIMITER |
+CREATE TRIGGER SalAdjHi BEFORE INSERT ON EmpHistory
+	FOR EACH ROW BEGIN
+    
+    DECLARE highsal INT;
+    
+    SET highSal = (SELECT sal_value
+
+					FROM SalPos AS sp1
+					INNER JOIN (
+								SELECT pos_id, MAX(sal_date) AS MaxDate -- this query takes gets the lmost recent date
+								
+								FROM SalPos
+								
+								GROUP BY pos_id
+						) AS sp2 ON sp1.pos_id = sp2.pos_id-- we can alias an entire query as sp2
+								 AND sp1.sal_date = sp2.MaxDate
+									
+						WHERE sp1.pos_id = NEW.pos_id
+						  AND  sal_id = 2
+                          );
+     
+     IF (NEW.salary > highSal) 
+		THEN SET NEW.salary = highSal;
+     END IF;
+END;
+
+|
